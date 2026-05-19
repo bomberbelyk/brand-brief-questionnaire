@@ -1045,7 +1045,7 @@ function TargetAudienceStep({
         label="Основна цільова аудиторія"
         value={brief.targetAudience.audience}
         onChange={(value) => setField('targetAudience', 'audience', value)}
-        placeholder="Хто ці люди або компанії? Що їх об’єднує?"
+        placeholder="Хто ці люди або компанії? Що їх об'єднує?"
         helper="Це допомагає визначити, яка візуальна мова буде для них природною."
         error={errors.audience}
       />
@@ -1262,7 +1262,7 @@ function VisualDirectionStep({
             onChange={(value) => setMood('classicModern', value)}
           />
           <MoodSlider
-            labelLeft="М’який"
+            labelLeft="М'який"
             labelRight="Гострий"
             value={brief.visualDirection.mood.softSharp}
             onChange={(value) => setMood('softSharp', value)}
@@ -1466,7 +1466,7 @@ function SummaryPage({
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#30362b] px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-[#30362b]/20 transition hover:bg-[#424b39] disabled:cursor-wait disabled:opacity-70 sm:w-auto"
       >
         <Mail size={18} />
-        {isSending ? ‘Надсилаємо...’ : ‘Надіслати бриф’}
+        {isSending ? 'Надсилаємо...' : 'Надіслати бриф'}
       </button>
     </article>
   )
