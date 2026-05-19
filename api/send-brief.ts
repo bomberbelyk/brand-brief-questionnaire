@@ -3,6 +3,57 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 const recipientEmail = 'v.demidov@urc.org.ua'
 
+type BrandBrief = Record<string, Record<string, unknown>>
+
+const sectionLabels: Record<string, string> = {
+  companyBasics: 'Основна інформація',
+  brandEssence: 'Суть бренду',
+  targetAudience: 'Цільова аудиторія',
+  competitors: 'Конкуренти та орієнтири',
+  visualDirection: 'Візуальний напрям',
+  practicalUsage: 'Практичне використання',
+  scopeAndDeliverables: 'Обсяг робіт',
+}
+
+const fieldLabels: Record<string, string> = {
+  brandName: 'Назва бренду', links: 'Посилання', description: 'Опис компанії',
+  category: 'Категорія', geography: 'Географія', stage: 'Стадія',
+  whatCompanyDoes: 'Що робить компанія', problemSolved: 'Яку проблему вирішує',
+  whyChoose: 'Чому обирають', brandWords: 'Слова бренду', promise: 'Обіцянка бренду',
+  desiredFeeling: 'Бажане відчуття', audience: 'Аудиторія', ageRange: 'Вік',
+  lifestyle: 'Стиль життя', needs: 'Потреби', fears: 'Страхи', choiceFactors: 'Фактори вибору',
+  admiredBrands: 'Бренди-орієнтири', logoType: 'Тип логотипу', mood: 'Настрій',
+  preferredColors: 'Бажані кольори', forbiddenColors: 'Заборонені кольори',
+  typography: 'Типографіка', references: 'Референси', clichesToAvoid: 'Кліше яких уникати',
+  placements: 'Де буде використовуватись', darkLightVersions: 'Темна/світла версія',
+  smallSizeReadability: 'Читабельність у малому розмірі', printReadyFiles: 'Файли для друку',
+  futureAnimation: 'Майбутня анімація', deliverables: 'Що потрібно розробити',
+  deadline: 'Дедлайн', budget: 'Бюджет', decisionMakers: 'Хто приймає рішення',
+  comments: 'Коментарі',
+}
+
+function briefToText(brief: BrandBrief): string {
+  return Object.entries(sectionLabels)
+    .map(([key, sectionTitle]) => {
+      const section = brief[key]
+      if (!section) return `${sectionTitle}\n(немає даних)`
+      const rows = Object.entries(section)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([field, value]) => {
+          const label = fieldLabels[field] ?? field
+          const val = Array.isArray(value)
+            ? value.join(', ')
+            : typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value)
+          return `  ${label}: ${val || 'Не заповнено'}`
+        })
+        .join('\n')
+      return `${sectionTitle}\n${rows}`
+    })
+    .join('\n\n')
+}
+
 type RequestWithBody = IncomingMessage & {
   body?: {
     brief?: unknown
@@ -63,6 +114,7 @@ export default async function handler(req: RequestWithBody, res: ServerResponse)
     }
 
     const briefJson = JSON.stringify(brief, null, 2)
+    const briefText = briefToText(brief as BrandBrief)
 
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
@@ -78,7 +130,7 @@ export default async function handler(req: RequestWithBody, res: ServerResponse)
       from: SMTP_FROM,
       to: recipientEmail,
       subject: 'Новий бренд-бриф з анкети',
-      text: `Новий бриф з онлайн-анкети.\n\n${briefJson}`,
+      text: `Новий бриф з онлайн-анкети.\n\n${briefText}`,
       attachments: [
         {
           filename: 'brand-brief.json',
@@ -87,7 +139,7 @@ export default async function handler(req: RequestWithBody, res: ServerResponse)
         },
         {
           filename: 'brand-brief.txt',
-          content: briefJson,
+          content: briefText,
           contentType: 'text/plain; charset=utf-8',
         },
       ],
