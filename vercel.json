@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/send-brief.ts": {
-      "runtime": "nodejs22.x"
-    }
-  }
-}
+{}
