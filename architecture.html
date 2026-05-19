@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Brief Questionnaire — Architecture</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0f0d;
+    --surface: #161714;
+    --surface2: #1e201c;
+    --border: #2e3028;
+    --text: #e8e6df;
+    --muted: #888f7e;
+    --accent: #c8e06b;
+
+    --frontend: #4ade80;
+    --frontend-bg: #14300e;
+    --backend: #60a5fa;
+    --backend-bg: #0d1f38;
+    --config: #f59e0b;
+    --config-bg: #2a1900;
+    --external: #e879f9;
+    --external-bg: #2a0e30;
+    --tooling: #94a3b8;
+    --tooling-bg: #1a1f2a;
+    --data: #fb923c;
+    --data-bg: #2a1200;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  h3 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  p  { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+  .meta { color: var(--muted); font-size: 12px; margin-bottom: 40px; }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 40px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text);
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+
+  /* Architecture rows */
+  .arch-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: stretch;
+  }
+
+  .layer-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    min-width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .blocks {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+
+  /* Blocks */
+  .block {
+    border: 1px solid;
+    border-radius: 10px;
+    padding: 14px 16px;
+    flex: 1;
+    min-width: 160px;
+    position: relative;
+  }
+
+  .block.frontend  { border-color: var(--frontend);  background: var(--frontend-bg);  }
+  .block.backend   { border-color: var(--backend);   background: var(--backend-bg);   }
+  .block.config    { border-color: var(--config);    background: var(--config-bg);    }
+  .block.external  { border-color: var(--external);  background: var(--external-bg);  }
+  .block.tooling   { border-color: var(--tooling);   background: var(--tooling-bg);   }
+  .block.data      { border-color: var(--data);      background: var(--data-bg);      }
+
+  .block-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .block.frontend  .block-title { color: var(--frontend);  }
+  .block.backend   .block-title { color: var(--backend);   }
+  .block.config    .block-title { color: var(--config);    }
+  .block.external  .block-title { color: var(--external);  }
+  .block.tooling   .block-title { color: var(--tooling);   }
+  .block.data      .block-title { color: var(--data);      }
+
+  .block-desc { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+
+  .tags {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    border: 1px solid currentColor;
+    opacity: .7;
+  }
+  .block.frontend  .tag { color: var(--frontend);  }
+  .block.backend   .tag { color: var(--backend);   }
+  .block.config    .tag { color: var(--config);    }
+  .block.external  .tag { color: var(--external);  }
+  .block.tooling   .tag { color: var(--tooling);   }
+  .block.data      .tag { color: var(--data);      }
+
+  /* Arrow connector */
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .arrow-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+    max-width: 200px;
+  }
+  .arrow-label {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Data flow diagram */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: flex-start;
+    max-width: 700px;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 0;
+  }
+  .flow-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .flow-content h3 { font-size: 13px; color: var(--text); }
+  .flow-content p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .flow-connector {
+    width: 26px;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .flow-connector-line {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  /* Risks */
+  .risks { display: flex; flex-direction: column; gap: 8px; }
+  .risk {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .risk-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .risk-body h3 { font-size: 12px; font-weight: 700; color: #fca5a5; margin-bottom: 2px; }
+  .risk-body p  { font-size: 11px; color: var(--muted); }
+
+  /* File table */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  td { font-size: 12px; padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  td.path { font-family: monospace; font-size: 11px; color: var(--accent); }
+  td.role { color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+
+  /* Module grid */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0 24px;
+  }
+
+  /* State badge */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .badge.ok    { background: #14300e; color: var(--frontend); border: 1px solid var(--frontend); }
+  .badge.warn  { background: #2a1900; color: var(--config);   border: 1px solid var(--config);   }
+  .badge.risk  { background: #300e0e; color: #f87171;         border: 1px solid #f87171;          }
+</style>
+</head>
+<body>
+
+<h1>Brand Brief Questionnaire</h1>
+<p class="meta">Architecture map · Generated 2026-05-19 · Vite + React 19 + Vercel Serverless · UI in Ukrainian</p>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:var(--frontend)"></div> Frontend (React/Vite)</div>
+  <div class="legend-item"><div class="dot" style="background:var(--backend)"></div> Backend (Serverless)</div>
+  <div class="legend-item"><div class="dot" style="background:var(--data)"></div> Data / State</div>
+  <div class="legend-item"><div class="dot" style="background:var(--external)"></div> External Services</div>
+  <div class="legend-item"><div class="dot" style="background:var(--config)"></div> Config / Env</div>
+  <div class="legend-item"><div class="dot" style="background:var(--tooling)"></div> Tooling / Build</div>
+</div>
+
+<!-- ─── LAYER ARCHITECTURE ─── -->
+<div class="section">
+  <h2>Layer Architecture</h2>
+
+  <!-- Tooling -->
+  <div class="arch-row">
+    <div class="layer-label">tooling</div>
+    <div class="blocks">
+      <div class="block tooling">
+        <div class="block-title">Vite 8</div>
+        <div class="block-desc">Dev server, HMR, bundling. Configured with React + Tailwind plugins.</div>
+        <div class="tags"><span class="tag">vite.config.ts</span><span class="tag">@vitejs/plugin-react</span></div>
+      </div>
+      <div class="block tooling">
+        <div class="block-title">TypeScript 6</div>
+        <div class="block-desc">Strict mode. Dual tsconfig: app (src/) + node (vite.config.ts).</div>
+        <div class="tags"><span class="tag">tsconfig.app.json</span><span class="tag">tsconfig.node.json</span></div>
+      </div>
+      <div class="block tooling">
+        <div class="block-title">ESLint 10</div>
+        <div class="block-desc">Flat config. TypeScript + React Hooks + React Refresh rules.</div>
+        <div class="tags"><span class="tag">eslint.config.js</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">builds &amp; bundles</div><div class="arrow-line"></div></div>
+
+  <!-- Frontend -->
+  <div class="arch-row">
+    <div class="layer-label">frontend</div>
+    <div class="blocks">
+      <div class="block frontend">
+        <div class="block-title">App.tsx (1665 lines)</div>
+        <div class="block-desc">Entire application in one file. 7-step wizard + summary page. All types, components, and logic co-located.</div>
+        <div class="tags"><span class="tag">useState</span><span class="tag">useEffect</span><span class="tag">useMemo</span></div>
+      </div>
+      <div class="block frontend">
+        <div class="block-title">Step Components (×7)</div>
+        <div class="block-desc">CompanyBasics, BrandEssence, TargetAudience, Competitors, VisualDirection, PracticalUsage, Scope. All defined in App.tsx.</div>
+        <div class="tags"><span class="tag">inline components</span></div>
+      </div>
+      <div class="block frontend">
+        <div class="block-title">UI Primitives</div>
+        <div class="block-desc">TextInput, TextArea, SelectField, MultiSelect, TagInput, MoodSlider, FileUpload, Stepper, SectionCard — all in App.tsx.</div>
+        <div class="tags"><span class="tag">Tailwind CSS 4</span><span class="tag">lucide-react</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">POST /api/send-brief (JSON body)</div><div class="arrow-line"></div></div>
+
+  <!-- Backend -->
+  <div class="arch-row">
+    <div class="layer-label">backend</div>
+    <div class="blocks">
+      <div class="block backend">
+        <div class="block-title">api/send-brief.ts</div>
+        <div class="block-desc">Vercel serverless function. Validates SMTP env vars, builds nodemailer transporter, sends email with brief as .json + .txt attachments to hardcoded recipient.</div>
+        <div class="tags"><span class="tag">POST only</span><span class="tag">nodemailer 8</span><span class="tag">Node.js 22.x</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">SMTP credentials from env</div><div class="arrow-line"></div></div>
+
+  <!-- Config -->
+  <div class="arch-row">
+    <div class="layer-label">config</div>
+    <div class="blocks">
+      <div class="block config">
+        <div class="block-title">Environment Variables</div>
+        <div class="block-desc">SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM. Set in Vercel dashboard. Not committed to git.</div>
+        <div class="tags"><span class="tag">.env.example</span><span class="tag">vercel.json</span></div>
+      </div>
+      <div class="block config">
+        <div class="block-title">vercel.json</div>
+        <div class="block-desc">Registers api/send-brief.ts as serverless function on Node.js 22.x runtime. Routes frontend to dist/index.html.</div>
+        <div class="tags"><span class="tag">runtime: nodejs22.x</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">sends email</div><div class="arrow-line"></div></div>
+
+  <!-- External -->
+  <div class="arch-row">
+    <div class="layer-label">external</div>
+    <div class="blocks">
+      <div class="block external">
+        <div class="block-title">SMTP Server</div>
+        <div class="block-desc">Any SMTP provider (configured via env). Delivers email with brief as attachment to v.demidov@urc.org.ua.</div>
+        <div class="tags"><span class="tag">hardcoded recipient</span><span class="tag">TLS port 587</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DATA FLOW ─── -->
+<div class="section">
+  <h2>Data Flow</h2>
+  <div class="flow">
+
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <h3>User opens app</h3>
+        <p>index.html loads. React hydrates. localStorage checked for existing draft under key <code>brand-brief-questionnaire-draft</code>. If found, BrandBrief state is restored.</p>
+      </div>
+    </div>
+    <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <h3>7-step wizard</h3>
+        <p>User fills form fields. onChange updates nested BrandBrief state. After each change, full state is serialized to localStorage. Step navigation requires passing per-step validation.</p>
+      </div>
+    </div>
+    <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <h3>Summary Page</h3>
+        <p>All collected data rendered for review. User can jump back to any step to edit. Can also download brief locally as JSON or TXT without submitting.</p>
+      </div>
+    </div>
+    <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <h3>Submit → POST /api/send-brief</h3>
+        <p>BrandBrief JSON sent in request body. No auth. No CSRF protection. Recipient is hardcoded server-side.</p>
+      </div>
+    </div>
+    <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <h3>Serverless function processes</h3>
+        <p>Validates env vars → creates nodemailer transporter → builds .json + .txt attachments → sends via SMTP. Returns 200 on success.</p>
+      </div>
+    </div>
+    <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <h3>Success / Error feedback</h3>
+        <p>Client shows success message. No state reset — user must manually clear or navigate away. localStorage draft persists.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── MODULES ─── -->
+<div class="section">
+  <h2>Main Modules & Files</h2>
+  <div class="module-grid">
+
+    <div class="block frontend">
+      <div class="block-title">BrandBrief type</div>
+      <div class="block-desc">Core data model. 7 nested sections. ~35 fields total. Defined at top of App.tsx.</div>
+      <div class="tags"><span class="tag">App.tsx:1–60</span></div>
+    </div>
+
+    <div class="block frontend">
+      <div class="block-title">State management</div>
+      <div class="block-desc">Single useState(BrandBrief) + field setter pattern. localStorage sync via useEffect.</div>
+      <div class="tags"><span class="tag">App.tsx:~80–130</span></div>
+    </div>
+
+    <div class="block frontend">
+      <div class="block-title">Validation logic</div>
+      <div class="block-desc">validateStep(step: number) returns string[]. Called on "Next" click. Error messages in Ukrainian.</div>
+      <div class="tags"><span class="tag">App.tsx:~140–220</span></div>
+    </div>
+
+    <div class="block frontend">
+      <div class="block-title">MoodSlider</div>
+      <div class="block-desc">6 bipolar dimensions (minimal↔expressive, etc.). range input mapped 0–100. Stored in visualDirection.mood.</div>
+      <div class="tags"><span class="tag">App.tsx</span></div>
+    </div>
+
+    <div class="block frontend">
+      <div class="block-title">FileUpload</div>
+      <div class="block-desc">Accepts image references. Stores as base64 in state (uploadedReferences[]). Not sent to server — only in local downloads.</div>
+      <div class="tags"><span class="tag">App.tsx</span><span class="tag">base64 only</span></div>
+    </div>
+
+    <div class="block frontend">
+      <div class="block-title">CompetitorsStep</div>
+      <div class="block-desc">Repeater pattern. Add/remove Competitor objects {name, link, likedStyle, avoid}. No limit on count.</div>
+      <div class="tags"><span class="tag">App.tsx</span></div>
+    </div>
+
+    <div class="block frontend">
+      <div class="block-title">SummaryPage</div>
+      <div class="block-desc">Renders full brief. Download (JSON/TXT) + Submit actions. Submit calls /api/send-brief.</div>
+      <div class="tags"><span class="tag">App.tsx</span></div>
+    </div>
+
+    <div class="block backend">
+      <div class="block-title">send-brief.ts</div>
+      <div class="block-desc">Full serverless handler: method check → env validation → transporter → attach → send. ~100 lines.</div>
+      <div class="tags"><span class="tag">api/send-brief.ts</span></div>
+    </div>
+
+    <div class="block data">
+      <div class="block-title">localStorage draft</div>
+      <div class="block-desc">Key: brand-brief-questionnaire-draft. Full BrandBrief serialized as JSON. No expiry. No versioning.</div>
+      <div class="tags"><span class="tag">browser only</span></div>
+    </div>
+
+    <div class="block config">
+      <div class="block-title">SMTP config</div>
+      <div class="block-desc">5 env vars. Validated at runtime in serverless fn. If any missing — returns 500.</div>
+      <div class="tags"><span class="tag">.env.example</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── CRITICAL FILES ─── -->
+<div class="section">
+  <h2>Critical Files</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Path</th>
+        <th>Role</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="path">src/App.tsx</td><td class="role">Entire frontend application — types, state, validation, all components, all steps, submission logic</td><td><span class="badge warn">monolith</span></td></tr>
+      <tr><td class="path">api/send-brief.ts</td><td class="role">Only backend — email sending via nodemailer</td><td><span class="badge ok">clean</span></td></tr>
+      <tr><td class="path">src/index.css</td><td class="role">Global CSS variables, font, form reset, Tailwind import</td><td><span class="badge ok">clean</span></td></tr>
+      <tr><td class="path">vercel.json</td><td class="role">Serverless function registration, Node.js runtime</td><td><span class="badge ok">clean</span></td></tr>
+      <tr><td class="path">.env.example</td><td class="role">Documents all required env vars for SMTP</td><td><span class="badge ok">clean</span></td></tr>
+      <tr><td class="path">vite.config.ts</td><td class="role">Build config — React + Tailwind plugins</td><td><span class="badge ok">minimal</span></td></tr>
+      <tr><td class="path">package.json</td><td class="role">Dependencies, scripts, dev:vercel command for local full-stack dev</td><td><span class="badge ok">clean</span></td></tr>
+      <tr><td class="path">index.html</td><td class="role">HTML entry point, mounts #root</td><td><span class="badge ok">minimal</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── RISKS ─── -->
+<div class="section">
+  <h2>Risks &amp; Weak Points</h2>
+  <div class="risks">
+
+    <div class="risk">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-body">
+        <h3>App.tsx is a 1665-line monolith</h3>
+        <p>All types, components, business logic, and state live in one file. Adding features is risky — no separation of concerns, hard to test, hard to navigate.</p>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-body">
+        <h3>Hardcoded recipient email in api/send-brief.ts</h3>
+        <p>The email destination (v.demidov@urc.org.ua) is hardcoded. Changing it requires a code deploy. Should be an env var.</p>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-body">
+        <h3>No API authentication or rate limiting</h3>
+        <p>/api/send-brief accepts any POST request. No auth, no CSRF token, no rate limiting. Anyone can spam the SMTP service.</p>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-body">
+        <h3>Uploaded files stored as base64 in state/localStorage</h3>
+        <p>Visual reference images accumulate in localStorage as base64 strings. No size limit. Not sent via email — silently lost on submission. May hit localStorage quota (~5MB).</p>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-body">
+        <h3>No localStorage schema versioning</h3>
+        <p>If BrandBrief type changes between deploys, stale drafts from localStorage will silently produce incorrect state. No migration or version check.</p>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-body">
+        <h3>No test coverage</h3>
+        <p>Zero tests. No test framework installed. Validation logic, state transitions, and email function are untested.</p>
+      </div>
+    </div>
+
+    <div class="risk">
+      <div class="risk-icon">ℹ️</div>
+      <div class="risk-body">
+        <h3>Unused assets in src/assets/</h3>
+        <p>react.svg and vite.svg are Vite scaffolding leftovers — not used in the application.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── EXTERNAL DEPS ─── -->
+<div class="section">
+  <h2>External Dependencies</h2>
+  <table>
+    <thead>
+      <tr><th>Package</th><th>Version</th><th>Purpose</th><th>Layer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="path">react + react-dom</td><td>^19.2.6</td><td class="role">UI framework (latest major)</td><td><span class="badge ok">frontend</span></td></tr>
+      <tr><td class="path">lucide-react</td><td>^1.16.0</td><td class="role">Icon components</td><td><span class="badge ok">frontend</span></td></tr>
+      <tr><td class="path">nodemailer</td><td>^8.0.7</td><td class="role">SMTP email sending (server only)</td><td><span class="badge ok">backend</span></td></tr>
+      <tr><td class="path">tailwindcss</td><td>^4.3.0</td><td class="role">Utility CSS (v4 — CSS-first config)</td><td><span class="badge ok">frontend</span></td></tr>
+      <tr><td class="path">@tailwindcss/vite</td><td>^4.3.0</td><td class="role">Tailwind v4 Vite integration</td><td><span class="badge ok">tooling</span></td></tr>
+      <tr><td class="path">vite</td><td>^8.0.12</td><td class="role">Build tool and dev server</td><td><span class="badge ok">tooling</span></td></tr>
+      <tr><td class="path">typescript</td><td>~6.0.2</td><td class="role">Type checking</td><td><span class="badge ok">tooling</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── DEPLOYMENT ─── -->
+<div class="section">
+  <h2>Build &amp; Deploy</h2>
+  <div class="blocks">
+    <div class="block config">
+      <div class="block-title">Local dev</div>
+      <div class="block-desc"><code>npm run dev</code> — Vite only, no serverless.<br><code>npm run dev:vercel</code> — Vercel CLI, runs serverless functions locally.</div>
+      <div class="tags"><span class="tag">port 5173 (vite)</span></div>
+    </div>
+    <div class="block config">
+      <div class="block-title">Production build</div>
+      <div class="block-desc"><code>npm run build</code> — tsc --noEmit + vite build → dist/</div>
+      <div class="tags"><span class="tag">dist/index.html</span><span class="tag">dist/assets/*.js</span></div>
+    </div>
+    <div class="block config">
+      <div class="block-title">Vercel deploy</div>
+      <div class="block-desc">Push to git. Vercel auto-builds. Frontend served as static CDN. api/ directory becomes serverless functions. Env vars set in dashboard.</div>
+      <div class="tags"><span class="tag">vercel.json</span><span class="tag">Node.js 22.x</span></div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 11px;">
+  Generated by Claude Code architecture mapper · brand-brief-questionnaire · 2026-05-19
+</div>
+
+</body>
+</html>

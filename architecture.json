@@ -1,0 +1,390 @@
+{
+  "project_summary": "Single-page React 19 questionnaire app for collecting brand design briefs. 7-step wizard with localStorage draft persistence. No database. One serverless function sends the completed brief via SMTP email to a hardcoded recipient. Entire frontend lives in a single 1665-line App.tsx. UI is in Ukrainian. Deployed on Vercel.",
+
+  "tech_stack": [
+    { "name": "React 19", "version": "^19.2.6", "role": "UI framework" },
+    { "name": "TypeScript 6", "version": "~6.0.2", "role": "Type safety, strict mode enabled" },
+    { "name": "Vite 8", "version": "^8.0.12", "role": "Dev server, bundler, HMR" },
+    { "name": "Tailwind CSS 4", "version": "^4.3.0", "role": "Utility-first CSS, v4 CSS-first config (no tailwind.config.js)" },
+    { "name": "nodemailer 8", "version": "^8.0.7", "role": "SMTP email sending in serverless function" },
+    { "name": "lucide-react", "version": "^1.16.0", "role": "Icon components" },
+    { "name": "Vercel", "version": "platform", "role": "Hosting: static CDN for frontend + serverless for api/" },
+    { "name": "Node.js 22.x", "version": "22.x", "role": "Runtime for api/send-brief.ts" }
+  ],
+
+  "architecture_layers": [
+    {
+      "name": "Frontend",
+      "color": "green",
+      "files": ["src/App.tsx", "src/main.tsx", "src/index.css", "src/App.css", "index.html"],
+      "description": "Entire React application. All types, state, components, and validation co-located in App.tsx. No component library — everything custom-built with Tailwind."
+    },
+    {
+      "name": "Backend (Serverless)",
+      "color": "blue",
+      "files": ["api/send-brief.ts"],
+      "description": "Single Vercel serverless function. POST-only. Validates env vars, builds nodemailer transporter, sends brief as .json + .txt email attachments."
+    },
+    {
+      "name": "Config",
+      "color": "amber",
+      "files": ["vercel.json", ".env.example", "vite.config.ts", "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json", "eslint.config.js", "package.json"],
+      "description": "Build tooling, runtime config, environment variable documentation."
+    },
+    {
+      "name": "External Services",
+      "color": "purple",
+      "files": [],
+      "description": "SMTP server (any provider via env vars). No other external services. No CDN, no analytics, no monitoring."
+    },
+    {
+      "name": "Data Layer (Client)",
+      "color": "orange",
+      "files": [],
+      "description": "localStorage only. Key: brand-brief-questionnaire-draft. Stores full BrandBrief as JSON. No server-side persistence."
+    }
+  ],
+
+  "main_modules": [
+    {
+      "name": "BrandBrief type",
+      "file": "src/App.tsx",
+      "approximate_line": "1-60",
+      "description": "Core TypeScript type defining all 7 sections of the brief. Includes nested types for Competitor. This is the canonical data model.",
+      "fields": [
+        "companyBasics: { brandName, links, description, category, geography, stage }",
+        "brandEssence: { whatCompanyDoes, problemSolved, whyChoose, brandWords[], promise, desiredFeeling }",
+        "targetAudience: { audience, ageRange, lifestyle, needs, fears, choiceFactors }",
+        "competitors: { items: Competitor[], admiredBrands }",
+        "visualDirection: { logoType, mood: Record<string,number>, preferredColors, forbiddenColors, typography, references, uploadedReferences[], clichesToAvoid }",
+        "practicalUsage: { placements[], darkLightVersions, smallSizeReadability, printReadyFiles, futureAnimation }",
+        "scopeAndDeliverables: { deliverables[], deadline, budget, decisionMakers, comments }"
+      ]
+    },
+    {
+      "name": "State management",
+      "file": "src/App.tsx",
+      "approximate_line": "~80-130",
+      "description": "Single useState<BrandBrief>. Deep-merge update pattern via field setter. useEffect syncs to localStorage on every change. useMemo used for derived values.",
+      "note": "No external state library (no Redux, Zustand, etc.)"
+    },
+    {
+      "name": "Step validation",
+      "file": "src/App.tsx",
+      "approximate_line": "~140-220",
+      "description": "validateStep(step: number): string[] — returns array of Ukrainian error messages. Called on Next button click. Blocks navigation if errors exist.",
+      "validated_steps": {
+        "1": ["brandName required"],
+        "2": ["whatCompanyDoes required", "problemSolved required"],
+        "3": ["audience required"],
+        "4": ["unknown — needs inspection"],
+        "5": ["logoType required"],
+        "6": ["placements required (at least one)"],
+        "7": ["deliverables required (at least one)", "deadline required"]
+      }
+    },
+    {
+      "name": "UI Primitives",
+      "file": "src/App.tsx",
+      "description": "Custom component library defined inline. All built with Tailwind classes. No separate component files.",
+      "components": [
+        "TextInput — labeled input with error state",
+        "TextArea — multi-line with error state",
+        "SelectField — styled native select",
+        "MultiSelect — checkbox group for arrays",
+        "TagInput — add/remove string tags",
+        "MoodSlider — bipolar range slider (0–100)",
+        "FileUpload — drag/drop or click, stores as base64",
+        "ProgressBar — step completion percentage",
+        "Stepper — step indicator with click navigation",
+        "SectionCard — visual wrapper with title"
+      ]
+    },
+    {
+      "name": "Step Components (×7)",
+      "file": "src/App.tsx",
+      "description": "One component per wizard step. Each receives brief state + setter as props. All defined in App.tsx after primitives.",
+      "components": [
+        "CompanyBasicsStep",
+        "BrandEssenceStep",
+        "TargetAudienceStep",
+        "CompetitorsStep",
+        "VisualDirectionStep",
+        "PracticalUsageStep",
+        "ScopeStep"
+      ]
+    },
+    {
+      "name": "SummaryPage",
+      "file": "src/App.tsx",
+      "description": "Final view before submission. Renders all brief sections. Buttons: Copy JSON, Download JSON, Download TXT, Submit. Submit POSTs to /api/send-brief."
+    },
+    {
+      "name": "send-brief serverless function",
+      "file": "api/send-brief.ts",
+      "description": "Vercel serverless handler. Validates SMTP env vars → creates transporter → builds email with two attachments (brief.json, brief.txt) → sends to hardcoded recipient v.demidov@urc.org.ua.",
+      "response_codes": {
+        "200": "Email sent successfully",
+        "400": "Invalid brief object in request body",
+        "405": "Wrong HTTP method (non-POST)",
+        "500": "Missing SMTP env vars or nodemailer error"
+      }
+    }
+  ],
+
+  "data_flow": [
+    {
+      "step": 1,
+      "name": "App load",
+      "description": "React mounts. useEffect reads localStorage key brand-brief-questionnaire-draft. If valid JSON found, sets as initial BrandBrief state."
+    },
+    {
+      "step": 2,
+      "name": "User input",
+      "description": "Field changes call setter with deep merge. useEffect detects state change and serializes full BrandBrief to localStorage."
+    },
+    {
+      "step": 3,
+      "name": "Step navigation",
+      "description": "Next button calls validateStep(currentStep). If errors.length > 0, sets error state and blocks. If 0 errors, increments currentStep."
+    },
+    {
+      "step": 4,
+      "name": "Summary review",
+      "description": "User reaches step 8 (summary). Can click any step dot to return and edit. Can download brief locally without submitting."
+    },
+    {
+      "step": 5,
+      "name": "Submission",
+      "description": "User clicks Submit. fetch POST to /api/send-brief with JSON body { brief: BrandBrief }. Shows loading state."
+    },
+    {
+      "step": 6,
+      "name": "Server processing",
+      "description": "Serverless function receives body, validates SMTP env vars, creates transporter, builds .json and .txt attachments, sends email via SMTP."
+    },
+    {
+      "step": 7,
+      "name": "Result feedback",
+      "description": "Client receives 200 (success) or error code. Displays success or error message inline. No state reset — localStorage draft remains."
+    }
+  ],
+
+  "api_routes": [
+    {
+      "path": "/api/send-brief",
+      "method": "POST",
+      "file": "api/send-brief.ts",
+      "auth": "none",
+      "rate_limiting": "none",
+      "request_body": "{ brief: BrandBrief }",
+      "response_success": "{ message: 'Brief sent successfully' }",
+      "response_error": "{ error: string }",
+      "side_effects": "Sends email to v.demidov@urc.org.ua with brief.json and brief.txt attachments",
+      "hardcoded_values": ["recipient: v.demidov@urc.org.ua"]
+    }
+  ],
+
+  "database_models": [],
+
+  "external_services": [
+    {
+      "name": "SMTP Server",
+      "purpose": "Email delivery",
+      "configured_via": "env vars: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM",
+      "provider": "any SMTP-compatible provider",
+      "note": "No specific provider locked in. Works with SendGrid, Gmail, Mailgun, etc."
+    }
+  ],
+
+  "entry_points": [
+    {
+      "type": "frontend",
+      "file": "index.html",
+      "description": "HTML shell. Loads src/main.tsx via Vite. Mounts React into #root div."
+    },
+    {
+      "type": "frontend_js",
+      "file": "src/main.tsx",
+      "description": "React StrictMode wrapper. Renders <App /> into document.getElementById('root')."
+    },
+    {
+      "type": "serverless",
+      "file": "api/send-brief.ts",
+      "description": "Default export is Vercel serverless handler function. POST /api/send-brief."
+    }
+  ],
+
+  "critical_files": [
+    {
+      "path": "src/App.tsx",
+      "importance": "critical",
+      "lines": 1665,
+      "note": "Contains everything: types, state, validation, all components, all steps, submission. Single point of failure."
+    },
+    {
+      "path": "api/send-brief.ts",
+      "importance": "critical",
+      "note": "Only backend logic. All email sending here. Recipient hardcoded."
+    },
+    {
+      "path": "vercel.json",
+      "importance": "high",
+      "note": "Registers serverless function. Wrong config here breaks /api routes."
+    },
+    {
+      "path": ".env.example",
+      "importance": "high",
+      "note": "Documents all required SMTP env vars. Actual .env not committed."
+    },
+    {
+      "path": "src/index.css",
+      "importance": "medium",
+      "note": "Global CSS reset, color variables, font. Tailwind import."
+    },
+    {
+      "path": "package.json",
+      "importance": "medium",
+      "note": "dev:vercel script needed for local full-stack dev with serverless."
+    }
+  ],
+
+  "agent_instructions": {
+    "how_to_add_features": [
+      "1. Read src/App.tsx top-to-bottom before changing anything — all types, components, and logic are inline.",
+      "2. To add a new form field: (a) extend BrandBrief type, (b) add to initialBriefState, (c) add UI in the relevant StepComponent, (d) add validation in validateStep() if required, (e) add rendering in SummaryPage.",
+      "3. To add a new wizard step: add StepComponent, increment totalSteps, add case in validateStep, add render in SummaryPage, add section in the step renderer switch.",
+      "4. To change the email recipient: find hardcoded string 'v.demidov@urc.org.ua' in api/send-brief.ts and replace with process.env.SMTP_TO — also add to .env.example.",
+      "5. To extract components: create src/components/ directory, move component definition (copy exact function signature and props), export, import in App.tsx. Avoid prop drilling — pass the full brief section as a prop.",
+      "6. All UI text is in Ukrainian — maintain consistency when adding new labels, error messages, or option values."
+    ],
+    "where_to_look_first": [
+      "src/App.tsx — for any frontend logic (types, validation, state, components)",
+      "api/send-brief.ts — for any backend/email logic",
+      "vercel.json — for deployment and routing issues",
+      ".env.example — for missing environment variable documentation",
+      "src/index.css — for global style variables and font config"
+    ],
+    "what_to_avoid": [
+      "Do not add more logic to App.tsx without extracting — it is already a monolith at 1665 lines.",
+      "Do not store large files (images) in localStorage — it will hit the 5MB quota.",
+      "Do not change BrandBrief type shape without handling existing localStorage drafts (add a schema version check or migration).",
+      "Do not trust uploaded files to arrive at the server — FileUpload only stores base64 in state, it is NOT sent via the API.",
+      "Do not deploy without setting all 5 SMTP env vars in Vercel dashboard — the function returns 500 if any are missing.",
+      "Do not add client-side auth — the app is intentionally anonymous. If auth is needed, handle it server-side.",
+      "Do not use Tailwind v3 syntax — the project uses Tailwind v4 which has breaking changes (no tailwind.config.js, different color syntax)."
+    ],
+    "coding_conventions": [
+      "TypeScript strict mode is on — no implicit any, no non-null assertions without justification.",
+      "Components use inline Tailwind classes — no CSS modules, no styled-components.",
+      "All user-facing strings are in Ukrainian.",
+      "State updates use deep merge pattern via the field setter — never mutate nested objects directly.",
+      "Serverless function validates all env vars at startup — fail fast with 500 rather than partial execution.",
+      "Tailwind v4 is CSS-first — theme customization goes in src/index.css using @theme, not in a config file.",
+      "ESLint flat config format (eslint.config.js) — add rules there if needed."
+    ],
+    "testing_notes": [
+      "No test framework is installed. If adding tests: install vitest (already works with Vite), add test scripts to package.json.",
+      "Priority test targets: validateStep() function (pure logic, easy to unit test), send-brief.ts handler (mock nodemailer).",
+      "localStorage behavior should be tested with jsdom (provided by vitest).",
+      "No E2E framework (Playwright, Cypress) is set up — if adding, configure to run against npm run dev:vercel for full-stack coverage."
+    ]
+  },
+
+  "risks": [
+    {
+      "id": "R1",
+      "severity": "high",
+      "title": "App.tsx monolith",
+      "description": "All 1665 lines of frontend code in one file. Every change risks breaking unrelated functionality. Hard to navigate, test, or onboard new contributors.",
+      "recommendation": "Extract step components into src/components/steps/, UI primitives into src/components/ui/, types into src/types/brief.ts, validation into src/lib/validation.ts."
+    },
+    {
+      "id": "R2",
+      "severity": "high",
+      "title": "Hardcoded recipient email",
+      "description": "v.demidov@urc.org.ua is hardcoded in api/send-brief.ts. Changing it requires a code deploy.",
+      "recommendation": "Move to SMTP_TO env var. Add to .env.example."
+    },
+    {
+      "id": "R3",
+      "severity": "high",
+      "title": "No API security",
+      "description": "POST /api/send-brief accepts any request with no authentication, CSRF protection, or rate limiting. Susceptible to email bombing.",
+      "recommendation": "Add a shared secret header check (simplest), or integrate Vercel's built-in rate limiting, or add a Turnstile/hCaptcha check."
+    },
+    {
+      "id": "R4",
+      "severity": "medium",
+      "title": "Uploaded files not included in email",
+      "description": "FileUpload stores images as base64 in React state. They are NOT sent to the server — only visible in local JSON/TXT downloads. User may not realize their reference images were not received.",
+      "recommendation": "Either send base64 data in the request body (risky for large files), upload to Vercel Blob/S3 separately and include URLs, or clearly inform the user in the UI."
+    },
+    {
+      "id": "R5",
+      "severity": "medium",
+      "title": "No localStorage schema versioning",
+      "description": "If BrandBrief type changes between deploys, a returning user with an old draft in localStorage will get corrupted state.",
+      "recommendation": "Add a BRIEF_SCHEMA_VERSION constant. On load, compare stored version — if mismatch, prompt user to clear draft or run a migration function."
+    },
+    {
+      "id": "R6",
+      "severity": "low",
+      "title": "No test coverage",
+      "description": "Zero automated tests. Validation logic and email sending are manually verified only.",
+      "recommendation": "Add vitest for unit tests on validateStep() and send-brief.ts at minimum."
+    },
+    {
+      "id": "R7",
+      "severity": "low",
+      "title": "Unused scaffolding assets",
+      "description": "src/assets/react.svg and src/assets/vite.svg are Vite template leftovers not used in the app.",
+      "recommendation": "Delete both files."
+    }
+  ],
+
+  "recommended_next_steps": [
+    {
+      "priority": 1,
+      "title": "Move recipient to env var",
+      "effort": "15 minutes",
+      "description": "Replace hardcoded 'v.demidov@urc.org.ua' in api/send-brief.ts with process.env.SMTP_TO. Add to .env.example."
+    },
+    {
+      "priority": 2,
+      "title": "Add basic API protection",
+      "effort": "1 hour",
+      "description": "Add a simple shared secret: client reads VITE_API_SECRET env var and sends as X-Brief-Secret header. Server validates it. Prevents anonymous abuse."
+    },
+    {
+      "priority": 3,
+      "title": "Add localStorage schema version",
+      "effort": "30 minutes",
+      "description": "Add SCHEMA_VERSION constant. Store with draft. On load, check — if mismatch, show banner asking user to reset or continue with possibly broken data."
+    },
+    {
+      "priority": 4,
+      "title": "Extract types and validation out of App.tsx",
+      "effort": "2 hours",
+      "description": "Create src/types/brief.ts (BrandBrief, Competitor types) and src/lib/validation.ts (validateStep). App.tsx imports them. No behavior change, enables testing."
+    },
+    {
+      "priority": 5,
+      "title": "Extract step components",
+      "effort": "3–4 hours",
+      "description": "Move each StepComponent into src/components/steps/CompanyBasicsStep.tsx etc. Move UI primitives into src/components/ui/. App.tsx becomes a thin orchestrator."
+    },
+    {
+      "priority": 6,
+      "title": "Add unit tests for validateStep",
+      "effort": "2 hours",
+      "description": "Install vitest. Write tests for each step validation case. No UI required — pure function tests."
+    },
+    {
+      "priority": 7,
+      "title": "Handle uploaded reference images in email",
+      "effort": "2–4 hours",
+      "description": "Include base64 images as inline attachments in the email, or add a Vercel Blob upload step before submission and include public URLs in the brief JSON."
+    }
+  ]
+}
