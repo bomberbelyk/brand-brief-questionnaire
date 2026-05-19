@@ -1459,16 +1459,6 @@ function SummaryPage({
         ))}
       </div>
 
-      <div className="mt-6 rounded-3xl border border-[#e3dfd3] bg-[#fbfaf7] p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#30332d]">
-          <FileText size={17} />
-          JSON-об’єкт
-        </div>
-        <pre className="max-h-80 overflow-auto rounded-2xl bg-[#22251f] p-4 text-xs leading-5 text-[#e9eadf]">
-          {json}
-        </pre>
-      </div>
-
       <button
         type="button"
         onClick={onSubmit}
@@ -1476,7 +1466,7 @@ function SummaryPage({
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#30362b] px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-[#30362b]/20 transition hover:bg-[#424b39] disabled:cursor-wait disabled:opacity-70 sm:w-auto"
       >
         <Mail size={18} />
-        {isSending ? 'Надсилаємо...' : `Надіслати на ${recipientEmail}`}
+        {isSending ? ‘Надсилаємо...’ : ‘Надіслати бриф’}
       </button>
     </article>
   )
